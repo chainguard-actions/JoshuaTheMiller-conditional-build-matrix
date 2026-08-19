@@ -1,0 +1,48 @@
+name: Test basic usage with addInclude true
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          inputFile: 'tests/fixtures/matrix_includes.json'
+          filter: '[*]'
+          addInclude: 'true'
+      - name: Assert matrix output contains include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should be wrapped in {"include": [...]}
+          if echo "$MATRIX" | grep -q '"include"'; then
+            echo "PASS: output contains 'include' wrapper"
+          else
+            echo "FAIL: expected output to contain 'include' wrapper"
+            exit 1
+          fi
+      - name: Assert matrix output contains ubuntu-latest
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"ubuntu-latest"'; then
+            echo "PASS: output contains ubuntu-latest"
+          else
+            echo "FAIL: expected output to contain ubuntu-latest"
+            exit 1
+          fi
+      - name: Assert matrix output contains all three entries
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"windows-latest"' && echo "$MATRIX" | grep -q '"macos-latest"'; then
+            echo "PASS: output contains all entries"
+          else
+            echo "FAIL: expected output to contain all entries"
+            exit 1
+          fi

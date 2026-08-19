@@ -1,0 +1,54 @@
+name: Test filtering with multiple conditions (OR logic)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          inputFile: 'tests/fixtures/matrix_includes.json'
+          filter: '[?runOnBranch==`always` || runOnBranch==`main`]'
+          addInclude: 'true'
+      - name: Assert matrix output contains ubuntu-latest
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"ubuntu-latest"'; then
+            echo "PASS: output contains ubuntu-latest (runOnBranch=always)"
+          else
+            echo "FAIL: expected output to contain ubuntu-latest"
+            exit 1
+          fi
+      - name: Assert matrix output contains windows-latest
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"windows-latest"'; then
+            echo "PASS: output contains windows-latest (runOnBranch=main)"
+          else
+            echo "FAIL: expected output to contain windows-latest"
+            exit 1
+          fi
+      - name: Assert matrix output does not contain macos-latest
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"macos-latest"'; then
+            echo "FAIL: output should not contain macos-latest (runOnBranch=release)"
+            exit 1
+          else
+            echo "PASS: output correctly excludes macos-latest"
+          fi
+      - name: Assert matrix output is valid JSON with include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          echo "$MATRIX" | python3 -c "import sys, json; data = json.load(sys.stdin); assert 'include' in data, 'missing include key'; assert len(data['include']) == 2, f'expected 2 items, got {len(data[\"include\"])}'"
+          echo "PASS: valid JSON with 2 items in include"

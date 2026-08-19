@@ -1,0 +1,31 @@
+name: Sample
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      - id: set-matrix
+        uses: ./ # Uses an action in the root directory        
+        with:
+          inputFile: '.github/workflows/matrix_includes.json' # Defaults to 'matrix_includes.json'
+          filter: '[?runOn==`${{ github.ref }}` || runOn==`always`]'
+          addInclude: true # Defaults to true
+  build:
+    needs: matrix_prep
+    strategy:      
+      matrix: ${{fromJson(needs.matrix_prep.outputs.matrix)}}
+    name: Build
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+    - name: Echo
+      env:
+        RUN_ON: ${{ matrix.runOn }}
+      run: echo "$RUN_ON"
