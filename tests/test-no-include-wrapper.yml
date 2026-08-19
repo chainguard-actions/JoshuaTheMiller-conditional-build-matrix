@@ -1,0 +1,61 @@
+name: Test output without include wrapper
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create matrix input file
+        run: |
+          mkdir -p .github/workflows
+          cat > .github/workflows/matrix_includes.json <<'EOF'
+          [
+            {"os": "ubuntu-latest", "node": "16"},
+            {"os": "macos-latest", "node": "18"}
+          ]
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          inputFile: '.github/workflows/matrix_includes.json'
+          filter: '[*]'
+          addInclude: 'false'
+
+      - name: Assert matrix output does NOT contain include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"include"'; then
+            echo "FAIL: output should not contain 'include' key when addInclude is false"
+            exit 1
+          fi
+          echo "PASS: output does not contain include wrapper"
+
+      - name: Assert matrix output is a raw JSON array
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          FIRST_CHAR=$(echo "$MATRIX" | tr -d '[:space:]' | cut -c1)
+          if [ "$FIRST_CHAR" = "[" ]; then
+            echo "PASS: output starts with '[' (raw array)"
+          else
+            echo "FAIL: expected raw JSON array starting with '[', got first char: $FIRST_CHAR"
+            exit 1
+          fi
+
+      - name: Assert matrix output contains expected data
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"ubuntu-latest"'; then
+            echo "PASS: output contains ubuntu-latest"
+          else
+            echo "FAIL: expected output to contain 'ubuntu-latest'"
+            exit 1
+          fi

@@ -1,0 +1,73 @@
+name: Test JMESPath filter narrows results
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create matrix input file with multiple entries
+        run: |
+          mkdir -p .github/workflows
+          cat > .github/workflows/matrix_includes.json <<'EOF'
+          [
+            {"os": "ubuntu-latest", "node": "16", "runTests": true},
+            {"os": "windows-latest", "node": "16", "runTests": false},
+            {"os": "macos-latest", "node": "18", "runTests": true}
+          ]
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          inputFile: '.github/workflows/matrix_includes.json'
+          filter: '[?runTests == `true`]'
+          addInclude: 'true'
+
+      - name: Assert filtered output contains include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"include"'; then
+            echo "PASS: output contains include wrapper"
+          else
+            echo "FAIL: expected output to contain 'include' key"
+            exit 1
+          fi
+
+      - name: Assert filtered output includes ubuntu-latest (runTests=true)
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"ubuntu-latest"'; then
+            echo "PASS: ubuntu-latest is present (runTests=true)"
+          else
+            echo "FAIL: expected ubuntu-latest to be in filtered output"
+            exit 1
+          fi
+
+      - name: Assert filtered output includes macos-latest (runTests=true)
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"macos-latest"'; then
+            echo "PASS: macos-latest is present (runTests=true)"
+          else
+            echo "FAIL: expected macos-latest to be in filtered output"
+            exit 1
+          fi
+
+      - name: Assert filtered output excludes windows-latest (runTests=false)
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"windows-latest"'; then
+            echo "FAIL: windows-latest should be excluded (runTests=false)"
+            exit 1
+          fi
+          echo "PASS: windows-latest correctly excluded by filter"

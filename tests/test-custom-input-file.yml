@@ -1,0 +1,73 @@
+name: Test custom input file path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create matrix input file at custom path
+        run: |
+          mkdir -p custom/path
+          cat > custom/path/my_matrix.json <<'EOF'
+          [
+            {"platform": "linux", "arch": "amd64"},
+            {"platform": "linux", "arch": "arm64"},
+            {"platform": "darwin", "arch": "amd64"}
+          ]
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          inputFile: 'custom/path/my_matrix.json'
+          filter: '[?platform == `linux`]'
+          addInclude: 'true'
+
+      - name: Assert output contains include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"include"'; then
+            echo "PASS: output contains include wrapper"
+          else
+            echo "FAIL: expected output to contain 'include' key"
+            exit 1
+          fi
+
+      - name: Assert output contains linux entries
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"linux"'; then
+            echo "PASS: output contains linux platform entries"
+          else
+            echo "FAIL: expected output to contain linux entries"
+            exit 1
+          fi
+
+      - name: Assert darwin is excluded by filter
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"darwin"'; then
+            echo "FAIL: darwin should be excluded by platform filter"
+            exit 1
+          fi
+          echo "PASS: darwin correctly excluded"
+
+      - name: Assert both linux architectures are present
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"amd64"' && echo "$MATRIX" | grep -q '"arm64"'; then
+            echo "PASS: both amd64 and arm64 are present"
+          else
+            echo "FAIL: expected both amd64 and arm64 in output"
+            exit 1
+          fi
