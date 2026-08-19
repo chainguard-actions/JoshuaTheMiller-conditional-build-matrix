@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1.0.0 | [`v1.0.0`](https://github.com/chainguard-actions/JoshuaTheMiller-conditional-build-matrix/tree/v1.0.0) | [`0521405`](https://github.com/JoshuaTheMiller/conditional-build-matrix/commit/052140591bd46dd4edfa6fbd874ebc981fca052c) |
+| v1.0.1 | [`v1.0.1`](https://github.com/chainguard-actions/JoshuaTheMiller-conditional-build-matrix/tree/v1.0.1) | [`7cd4693`](https://github.com/JoshuaTheMiller/conditional-build-matrix/commit/7cd46935494e9cff28466ac1df931c60707f75cb) |
 | v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/JoshuaTheMiller-conditional-build-matrix/tree/v2.0.0) | — |
 | v2.0.1 | [`v2.0.1`](https://github.com/chainguard-actions/JoshuaTheMiller-conditional-build-matrix/tree/v2.0.1) | [`81b51eb`](https://github.com/JoshuaTheMiller/conditional-build-matrix/commit/81b51eb8d89e07b86404934b5fecde1cea1163a5) |
 
