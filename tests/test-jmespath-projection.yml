@@ -1,0 +1,66 @@
+name: Test JMESPath field projection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[*].platform"
+          addInclude: "false"
+
+      - name: Assert matrix output contains all platforms
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # [*].platform should return all platform values as an array
+          if ! echo "$MATRIX" | grep -q '"linux"'; then
+            echo "FAIL: expected output to contain linux"
+            exit 1
+          fi
+          if ! echo "$MATRIX" | grep -q '"windows"'; then
+            echo "FAIL: expected output to contain windows"
+            exit 1
+          fi
+          if ! echo "$MATRIX" | grep -q '"macos"'; then
+            echo "FAIL: expected output to contain macos"
+            exit 1
+          fi
+          echo "PASS: output contains all platform values"
+
+      - name: Assert matrix output does not contain arch or runTests fields
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Projection [*].platform should only return platform strings, not full objects
+          if echo "$MATRIX" | grep -q '"arch"'; then
+            echo "FAIL: output should not contain 'arch' field (projection only returns platform)"
+            exit 1
+          fi
+          if echo "$MATRIX" | grep -q '"runTests"'; then
+            echo "FAIL: output should not contain 'runTests' field (projection only returns platform)"
+            exit 1
+          fi
+          echo "PASS: output only contains platform values without other fields"
+
+      - name: Assert output is a JSON array of 4 platforms
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should have 4 entries (linux x2, windows x1, macos x1)
+          # Count commas + 1 as a proxy for array length in a simple string array
+          COUNT=$(echo "$MATRIX" | grep -o '"linux"\|"windows"\|"macos"' | wc -l)
+          echo "platform count: $COUNT"
+          if [ "$COUNT" -ne 4 ]; then
+            echo "FAIL: expected 4 platform entries (linux x2, windows, macos), got $COUNT"
+            exit 1
+          fi
+          echo "PASS: output contains 4 platform entries"

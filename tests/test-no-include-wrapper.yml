@@ -1,0 +1,62 @@
+name: Test filter without include wrapper
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[?platform == `linux`]"
+          addInclude: "false"
+
+      - name: Assert matrix output does NOT contain include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          if echo "$MATRIX" | grep -q '"include"'; then
+            echo "FAIL: output should NOT contain 'include' wrapper when addInclude=false"
+            exit 1
+          fi
+          echo "PASS: output does not contain include wrapper"
+
+      - name: Assert matrix output is a raw JSON array
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should start with '[' (raw array, no include wrapper)
+          FIRST_CHAR=$(echo "$MATRIX" | head -c 1)
+          if [ "$FIRST_CHAR" != "[" ]; then
+            echo "FAIL: expected raw JSON array starting with '[', got: $FIRST_CHAR"
+            exit 1
+          fi
+          echo "PASS: output is a raw JSON array"
+
+      - name: Assert matrix output contains both linux entries
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Filter is [?platform == `linux`] - should return both linux entries (amd64 and arm64)
+          COUNT=$(echo "$MATRIX" | grep -o '"linux"' | wc -l)
+          echo "linux count: $COUNT"
+          if [ "$COUNT" -ne 2 ]; then
+            echo "FAIL: expected 2 linux entries, got $COUNT"
+            exit 1
+          fi
+          # Should not contain windows or macos
+          if echo "$MATRIX" | grep -q '"windows"'; then
+            echo "FAIL: output should not contain windows entries"
+            exit 1
+          fi
+          if echo "$MATRIX" | grep -q '"macos"'; then
+            echo "FAIL: output should not contain macos entries"
+            exit 1
+          fi
+          echo "PASS: output contains exactly the linux entries"

@@ -1,5 +1,6 @@
 [
-  {"platform": "linux", "arch": "amd64", "include": true},
-  {"platform": "linux", "arch": "arm64", "include": false},
-  {"platform": "windows", "arch": "amd64", "include": true}
+  {"platform": "linux", "arch": "amd64", "runTests": true},
+  {"platform": "linux", "arch": "arm64", "runTests": false},
+  {"platform": "windows", "arch": "amd64", "runTests": true},
+  {"platform": "macos", "arch": "amd64", "runTests": false}
 ]

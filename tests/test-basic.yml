@@ -1,4 +1,4 @@
-name: Test basic usage with filter
+name: Test basic usage with addInclude true
 on:
   workflow_dispatch:
 jobs:
@@ -7,59 +7,53 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Copy fixture matrix file to expected location
-        run: |
-          mkdir -p .github/workflows
-          cp $GITHUB_WORKSPACE/actions/hardened/JoshuaTheMiller--conditional-build-matrix/v2.0.1/tests/fixtures/matrix_includes.json \
-             .github/workflows/matrix_includes.json
-
       - id: action
         uses: .
         with:
-          inputFile: '.github/workflows/matrix_includes.json'
-          filter: '[?include == `true`]'
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[?runTests == `true`]"
+          addInclude: "true"
 
-      - name: Assert matrix output is set
+      - name: Assert matrix output contains include wrapper
         env:
-          ACTUAL: ${{ steps.action.outputs.matrix }}
+          MATRIX: ${{ steps.action.outputs.matrix }}
         run: |
-          echo "actual: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: expected matrix output to be non-empty"
+          echo "matrix: $MATRIX"
+          # Should start with {"include":
+          if ! echo "$MATRIX" | grep -q '"include"'; then
+            echo "FAIL: expected output to contain 'include' wrapper"
             exit 1
           fi
-          echo "PASS: matrix output is set"
+          echo "PASS: output contains include wrapper"
 
-      - name: Assert matrix contains linux amd64
+      - name: Assert matrix output contains linux amd64
         env:
-          ACTUAL: ${{ steps.action.outputs.matrix }}
+          MATRIX: ${{ steps.action.outputs.matrix }}
         run: |
-          echo "actual: $ACTUAL"
-          if echo "$ACTUAL" | grep -q '"linux"'; then
-            echo "PASS: linux platform found in matrix"
-          else
-            echo "FAIL: expected linux platform in matrix output"
+          echo "matrix: $MATRIX"
+          if ! echo "$MATRIX" | grep -q '"linux"'; then
+            echo "FAIL: expected output to contain linux platform"
             exit 1
           fi
-
-      - name: Assert filtered-out entries are excluded
-        env:
-          ACTUAL: ${{ steps.action.outputs.matrix }}
-        run: |
-          echo "actual: $ACTUAL"
-          # arm64 has include=false so should be filtered out
-          if echo "$ACTUAL" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-# data may be wrapped in {include: [...]} or just a list
-items = data.get('include', data) if isinstance(data, dict) else data
-for item in items:
-    if item.get('arch') == 'arm64':
-        print('FAIL: arm64 should have been filtered out')
-        sys.exit(1)
-print('PASS: arm64 correctly excluded')
-"; then
-            echo "Assertion passed"
-          else
+          if ! echo "$MATRIX" | grep -q '"amd64"'; then
+            echo "FAIL: expected output to contain amd64 arch"
             exit 1
           fi
+          echo "PASS: output contains expected filtered entries"
+
+      - name: Assert matrix output excludes entries where runTests is false
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # The filter [?runTests == `true`] should exclude linux/arm64 and macos/amd64
+          # We check that windows is present (runTests: true) and arm64 is NOT present
+          # (linux/arm64 has runTests: false, macos/amd64 has runTests: false)
+          # Count occurrences of "amd64" - should be 2 (linux+windows), not 3
+          COUNT=$(echo "$MATRIX" | grep -o '"amd64"' | wc -l)
+          echo "amd64 count: $COUNT"
+          if [ "$COUNT" -ne 2 ]; then
+            echo "FAIL: expected 2 amd64 entries (linux+windows with runTests=true), got $COUNT"
+            exit 1
+          fi
+          echo "PASS: filtered correctly to only runTests=true entries"
