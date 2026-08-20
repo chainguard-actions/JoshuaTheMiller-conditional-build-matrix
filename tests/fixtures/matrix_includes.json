@@ -1,5 +1,6 @@
 [
-  { "os": "ubuntu-latest", "env": "production" },
-  { "os": "windows-latest", "env": "staging" },
-  { "os": "macos-latest", "env": "production" }
+  {"os": "ubuntu-latest", "env": "production", "runTests": true},
+  {"os": "ubuntu-latest", "env": "staging", "runTests": true},
+  {"os": "windows-latest", "env": "production", "runTests": false},
+  {"os": "macos-latest", "env": "staging", "runTests": false}
 ]

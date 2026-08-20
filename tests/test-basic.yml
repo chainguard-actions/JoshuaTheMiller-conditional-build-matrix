@@ -1,0 +1,46 @@
+name: Test basic usage with include wrapper
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[?runTests == `true`]"
+          addInclude: "true"
+      - name: Assert matrix output contains include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Must start with {"include":
+          if ! echo "$MATRIX" | grep -q '"include"'; then
+            echo "FAIL: expected output to contain 'include' key"
+            exit 1
+          fi
+          echo "PASS: output contains include wrapper"
+      - name: Assert filtered results contain only runTests=true entries
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should contain ubuntu-latest entries (both have runTests=true)
+          if ! echo "$MATRIX" | grep -q '"ubuntu-latest"'; then
+            echo "FAIL: expected ubuntu-latest entries in output"
+            exit 1
+          fi
+          # Should NOT contain windows-latest (runTests=false)
+          if echo "$MATRIX" | grep -q '"windows-latest"'; then
+            echo "FAIL: windows-latest should have been filtered out (runTests=false)"
+            exit 1
+          fi
+          # Should NOT contain macos-latest (runTests=false)
+          if echo "$MATRIX" | grep -q '"macos-latest"'; then
+            echo "FAIL: macos-latest should have been filtered out (runTests=false)"
+            exit 1
+          fi
+          echo "PASS: filtered results are correct"

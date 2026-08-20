@@ -1,0 +1,30 @@
+name: Test filter that matches no elements
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[?env == 'nonexistent']"
+          addInclude: "true"
+      - name: Assert matrix output is empty array wrapped in include
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should contain include wrapper
+          if ! echo "$MATRIX" | grep -q '"include"'; then
+            echo "FAIL: expected output to contain 'include' key"
+            exit 1
+          fi
+          # Should contain empty array
+          if ! echo "$MATRIX" | grep -q '"include":\[\]'; then
+            echo "FAIL: expected empty array in include, got: $MATRIX"
+            exit 1
+          fi
+          echo "PASS: empty filter result is correctly represented as {\"include\":[]}"

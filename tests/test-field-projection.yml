@@ -1,0 +1,49 @@
+name: Test JMESPath field projection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[*].os"
+          addInclude: "false"
+      - name: Assert matrix output contains all OS values
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should be non-empty
+          if [ -z "$MATRIX" ]; then
+            echo "FAIL: expected non-empty output"
+            exit 1
+          fi
+          # Should contain all OS values from the fixture
+          if ! echo "$MATRIX" | grep -q '"ubuntu-latest"'; then
+            echo "FAIL: expected ubuntu-latest in output"
+            exit 1
+          fi
+          if ! echo "$MATRIX" | grep -q '"windows-latest"'; then
+            echo "FAIL: expected windows-latest in output"
+            exit 1
+          fi
+          if ! echo "$MATRIX" | grep -q '"macos-latest"'; then
+            echo "FAIL: expected macos-latest in output"
+            exit 1
+          fi
+          echo "PASS: field projection returned all OS values"
+      - name: Assert output does not contain full objects
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Projection of [*].os should not contain 'runTests' key
+          if echo "$MATRIX" | grep -q '"runTests"'; then
+            echo "FAIL: output should only contain OS strings, not full objects"
+            exit 1
+          fi
+          echo "PASS: output contains only projected fields"

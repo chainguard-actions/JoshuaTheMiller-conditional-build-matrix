@@ -1,0 +1,52 @@
+name: Test filter without include wrapper
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          inputFile: tests/fixtures/matrix_includes.json
+          filter: "[?env == 'production']"
+          addInclude: "false"
+      - name: Assert matrix output does NOT contain include wrapper
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Must NOT start with {"include":
+          if echo "$MATRIX" | grep -q '"include"'; then
+            echo "FAIL: output should not contain 'include' key when addInclude=false"
+            exit 1
+          fi
+          echo "PASS: output does not contain include wrapper"
+      - name: Assert filtered results contain only production entries
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should contain production entries
+          if ! echo "$MATRIX" | grep -q '"production"'; then
+            echo "FAIL: expected production entries in output"
+            exit 1
+          fi
+          # Should NOT contain staging entries
+          if echo "$MATRIX" | grep -q '"staging"'; then
+            echo "FAIL: staging entries should have been filtered out"
+            exit 1
+          fi
+          echo "PASS: filtered results are correct"
+      - name: Assert output is valid JSON array
+        env:
+          MATRIX: ${{ steps.action.outputs.matrix }}
+        run: |
+          echo "matrix: $MATRIX"
+          # Should be a JSON array starting with [
+          if ! echo "$MATRIX" | grep -q '^\['; then
+            echo "FAIL: expected output to be a JSON array (starting with '[')"
+            exit 1
+          fi
+          echo "PASS: output is a JSON array"
