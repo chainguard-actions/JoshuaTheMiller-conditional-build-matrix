@@ -1,7 +1,0 @@
-{
-  "owner": "JoshuaTheMiller",
-  "name": "conditional-build-matrix",
-  "visibility": "public",
-  "description": "Provides an easier way to filter matrix elements!",
-  "block_publish": false
-}
