@@ -4,8 +4,13 @@
   "version": "v2.0.1",
   "commit_sha": "81b51eb8d89e07b86404934b5fecde1cea1163a5",
   "url": "https://github.com/JoshuaTheMiller/conditional-build-matrix",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/JoshuaTheMiller/conditional-build-matrix/v2.0.1/sha256-6a4c0ec42b48680c19396c0cc12eae93b61fa85cee6072f3e2be4061caf09143.tar.gz",
+    "sha256": "6a4c0ec42b48680c19396c0cc12eae93b61fa85cee6072f3e2be4061caf09143",
+    "size_bytes": 237120
+  }
 }
